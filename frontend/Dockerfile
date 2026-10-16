@@ -1,5 +1,6 @@
 # ---- Stage 1: build the React app with Node ----
-FROM node:22-alpine AS build
+# The build output is static files, so build natively on the CI runner's platform.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund

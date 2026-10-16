@@ -119,13 +119,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push images tagged with the commit SHA
+      # Scanned images passed the gate; now publish them for both amd64 (EKS, Intel)
+      # and arm64 (Apple Silicon Minikube) under the same commit-SHA tag.
+      - uses: docker/setup-qemu-action@v3
+        if: github.event_name != 'pull_request'
+      - uses: docker/setup-buildx-action@v3
+        if: github.event_name != 'pull_request'
+
+      - name: Push multi-arch images tagged with the commit SHA
         if: github.event_name != 'pull_request'
         run: |
-          docker push ${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.tag }}
-          docker push ${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.tag }}
+          for svc in backend frontend; do
+            if [ "$svc" = backend ]; then image=${{ steps.meta.outputs.backend }}; else image=${{ steps.meta.outputs.frontend }}; fi
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} \
+              --label org.opencontainers.image.revision=${{ github.sha }} \
+              -t "$image:${{ steps.meta.outputs.tag }}" --push "./$svc"
+          done
           {
-            echo "### Published images"
+            echo "### Published images (linux/amd64 + linux/arm64)"
             echo "- \`${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.tag }}\`"
             echo "- \`${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.tag }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
