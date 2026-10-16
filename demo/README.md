@@ -6,4 +6,4 @@
 |---|---|
 | [StockPilot-presentation.pptx](StockPilot-presentation.pptx) | Slide deck (11 slides): overview, tech stack, architecture, CI/CD, Trivy, Terraform, Kubernetes + Argo CD, observability, learnings |
 | [StockPilot-presentation.pdf](StockPilot-presentation.pdf) | Same deck as PDF |
-| [VIDEO.md](VIDEO.md) | Link to the walkthrough video |
+| [Walkthrough video (Google Drive)](https://drive.google.com/drive/folders/1tF3l5O6t__5sEGaI30aJEPiMDtrPM9bs?usp=sharing) | Slides + live walkthrough, also linked from [VIDEO.md](VIDEO.md) |

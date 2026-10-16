@@ -2,7 +2,7 @@
 
 **Student:** Kiran · **Roll No.:** 10446
 
-▶️ **Video link:** _Google Drive link will be added here_
+▶️ **Video link:** https://drive.google.com/drive/folders/1tF3l5O6t__5sEGaI30aJEPiMDtrPM9bs?usp=sharing
 
 The video covers:
 1. Slides: project overview, tech stack and architecture
