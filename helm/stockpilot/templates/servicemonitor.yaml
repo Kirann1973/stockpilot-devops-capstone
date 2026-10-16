@@ -1,0 +1,20 @@
+{{- if and .Values.monitoring.serviceMonitor.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "stockpilot.fullname" . }}-backend
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.serviceMonitor.releaseLabel }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "stockpilot.backendSelector" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+{{- end }}
