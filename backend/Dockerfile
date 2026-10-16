@@ -7,8 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install dependencies first so this layer is cached between code changes.
+# pip and setuptools are removed afterwards: they are not needed at runtime and
+# their vendored libraries were the source of HIGH CVEs in the Trivy scan.
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt \
+RUN pip install -r requirements.txt \
+    && pip uninstall -y setuptools wheel \
+    && python -m pip uninstall -y pip \
     && useradd --create-home --uid 10001 appuser
 
 COPY alembic.ini ./
