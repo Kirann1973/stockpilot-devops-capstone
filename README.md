@@ -1,6 +1,6 @@
 # StockPilot: Inventory Management on a Full DevOps Pipeline
 
-**Student:** Kiran · **Roll No.:** 10446 · DevOps Final Capstone (Session 21)
+**Student:** Kiran · **Roll No.:** 10446 · DevOps Final Capstone
 
 StockPilot is a small, SaaS-style inventory management app. A store or office team uses it to:
 
