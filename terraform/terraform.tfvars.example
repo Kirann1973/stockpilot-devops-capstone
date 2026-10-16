@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is git-ignored.
+# AWS credentials come from `aws configure` / environment variables, never from this file.
+aws_region          = "ap-south-1"
+environment         = "dev"
+owner               = "kiran-10446"
+cluster_name        = "stockpilot-eks"
+cluster_version     = "1.32"
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 3
