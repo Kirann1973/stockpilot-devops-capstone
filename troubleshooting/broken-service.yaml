@@ -1,0 +1,17 @@
+# Lab 2: a Service with no endpoints.
+#   kubectl apply -f troubleshooting/broken-service.yaml
+#   kubectl get endpoints -n stockpilot stockpilot-broken-svc   -> <none>
+#   kubectl get pods -n stockpilot --show-labels              -> real label is app=stockpilot-backend
+# Fix: change the selector to app: stockpilot-backend and targetPort to 8000, re-apply,
+# then kubectl get endpoints shows the backend pod IPs.
+apiVersion: v1
+kind: Service
+metadata:
+  name: stockpilot-broken-svc
+  namespace: stockpilot
+spec:
+  selector:
+    app: stockpilot-api          # wrong label
+  ports:
+    - port: 8000
+      targetPort: 9000           # wrong port

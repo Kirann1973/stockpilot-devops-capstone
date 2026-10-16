@@ -1,0 +1,22 @@
+# Lab 1: ImagePullBackOff.
+#   kubectl apply -f troubleshooting/broken-image.yaml
+#   kubectl get pods -n stockpilot            -> ErrImagePull / ImagePullBackOff
+#   kubectl describe pod -n stockpilot -l app=stockpilot-broken-image   -> "manifest unknown"
+# Fix: point the image at a tag that exists (a real commit SHA), or delete it:
+#   kubectl delete -f troubleshooting/broken-image.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stockpilot-broken-image
+  namespace: stockpilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: stockpilot-broken-image }
+  template:
+    metadata:
+      labels: { app: stockpilot-broken-image }
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/kirann1973/stockpilot-backend:tag-that-does-not-exist
