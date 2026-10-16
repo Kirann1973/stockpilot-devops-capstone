@@ -9,6 +9,9 @@ RUN npm run build
 # ---- Stage 2: serve static files with unprivileged Nginx ----
 # nginx-unprivileged runs as the non-root "nginx" user (uid 101) on port 8080.
 FROM nginxinc/nginx-unprivileged:1.29-alpine
+# Pull in the latest Alpine security fixes, then drop back to the non-root user.
+USER root
+RUN apk upgrade --no-cache
 ENV BACKEND_URL=http://backend:8000
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
