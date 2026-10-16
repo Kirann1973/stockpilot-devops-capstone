@@ -1,0 +1,53 @@
+# Images are built and pushed by GitHub Actions, tagged with the Git commit SHA.
+# Override the tag at deploy time: --set image.tag=<commit-sha>
+image:
+  registry: ghcr.io/kirann1973
+  tag: "CHANGE_ME_TO_COMMIT_SHA"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+backend:
+  repository: stockpilot-backend
+  replicas: 2
+  port: 8000
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 384Mi }
+
+frontend:
+  repository: stockpilot-frontend
+  replicas: 2
+  port: 8080
+  resources:
+    requests: { cpu: 50m, memory: 32Mi }
+    limits: { cpu: 200m, memory: 128Mi }
+
+postgres:
+  image: postgres:16-alpine
+  database: stockpilot
+  username: stockpilot
+  # Demo only. In production use an external secret manager or RDS.
+  password: stockpilot
+  storage: 1Gi
+  storageClassName: ""   # "" = cluster default (minikube "standard", EKS "gp2")
+
+ingress:
+  enabled: true
+  className: nginx
+  host: stockpilot.local
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    # Must match the kube-prometheus-stack release name so Prometheus picks it up.
+    releaseLabel: monitoring
+    interval: 15s
+  grafanaDashboard:
+    enabled: true

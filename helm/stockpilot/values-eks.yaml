@@ -1,0 +1,7 @@
+# EKS: install ingress-nginx first (creates an AWS load balancer), then use its hostname.
+ingress:
+  enabled: true
+  className: nginx
+  host: ""          # empty = match any host, so the ELB DNS name works directly
+postgres:
+  storageClassName: gp2

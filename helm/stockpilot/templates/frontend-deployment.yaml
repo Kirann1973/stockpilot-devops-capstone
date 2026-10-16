@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "stockpilot.fullname" . }}-frontend
+  labels:
+    {{- include "stockpilot.labels" . | nindent 4 }}
+    {{- include "stockpilot.frontendSelector" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "stockpilot.frontendSelector" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "stockpilot.frontendSelector" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+      containers:
+        - name: frontend
+          image: "{{ .Values.image.registry }}/{{ .Values.frontend.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.port }}
+          env:
+            # Nginx proxies /api to the backend Service when the app is opened without the Ingress.
+            - name: BACKEND_URL
+              value: "http://{{ include "stockpilot.fullname" . }}-backend:{{ .Values.backend.port }}"
+          readinessProbe:
+            httpGet: { path: /nginx-health, port: http }
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet: { path: /nginx-health, port: http }
+            initialDelaySeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}

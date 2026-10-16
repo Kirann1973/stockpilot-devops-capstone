@@ -1,0 +1,5 @@
+# minikube: enable addons first -> minikube addons enable ingress && minikube addons enable metrics-server
+ingress:
+  enabled: true
+  className: nginx
+  host: stockpilot.local

@@ -1,0 +1,7 @@
+StockPilot {{ .Chart.AppVersion }} deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+  kubectl get pods,svc,ingress,hpa -n {{ .Release.Namespace }}
+{{- if .Values.ingress.enabled }}
+  Open: http://{{ .Values.ingress.host | default "<ingress-address>" }}/
+{{- end }}
+  Without ingress: kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "stockpilot.fullname" . }}-frontend 3000:80
