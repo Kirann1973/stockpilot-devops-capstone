@@ -2,4 +2,4 @@
 # The "GitOps: bump image tag" job in .github/workflows/ci-cd.yml rewrites this
 # line after every green build, and Argo CD then rolls the cluster to that commit.
 image:
-  tag: "26040aaebc87aef5579fa07132a203dabf1a169a"
+  tag: "bc270c578fa29ff10944259ffc352570d8ca4841"
