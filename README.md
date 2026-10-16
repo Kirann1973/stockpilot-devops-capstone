@@ -69,8 +69,10 @@ Developer ── git push ──► GitHub
 ├── k8s/namespace.yaml
 ├── helm/stockpilot/         Chart.yaml, values.yaml, templates/, dashboards/
 ├── monitoring/              kube-prometheus-stack values
+├── argocd/                 Argo CD Application (GitOps)
 ├── troubleshooting/         broken-image and broken-service labs
 ├── scripts/load-test.sh     traffic generator for Grafana/HPA
+├── demo/                    slide deck + walkthrough video
 └── docs/                    Trivy notes and screenshots
 ```
 
@@ -129,7 +131,8 @@ Every push to `main` runs `.github/workflows/ci-cd.yml`:
 1. **test**: pytest (fails the pipeline on any failure) and `npm run build`
 2. **terraform**: `fmt -check`, `init -backend=false`, `validate`
 3. **build-scan-push**: build both images, Trivy scan both (exit code 1 on HIGH/CRITICAL fixable CVEs), push to `ghcr.io/kirann1973/stockpilot-backend:<sha>` and `ghcr.io/kirann1973/stockpilot-frontend:<sha>`
-4. **deploy**: `helm upgrade --install` with `image.tag=<sha>`. Runs only when a `KUBE_CONFIG_DATA` secret (base64 kubeconfig) is set; otherwise it is skipped with a notice.
+4. **gitops-bump**: writes the new `<sha>` into `helm/stockpilot/values-gitops.yaml` and commits it (`[skip ci]`). Argo CD picks that commit up and deploys it (see section 7b).
+5. **deploy**: `helm upgrade --install` with `image.tag=<sha>`. Runs only when a `KUBE_CONFIG_DATA` secret (base64 kubeconfig) is set; otherwise it is skipped with a notice.
 
 Images live under the GitHub profile → **Packages**. If a package shows as private, open it → *Package settings* → *Change visibility* → Public, so the cluster can pull it without credentials.
 
@@ -196,17 +199,50 @@ kubectl port-forward -n monitoring svc/monitoring-grafana 3001:80
 # http://localhost:3001  (admin / stockpilot-admin) → Dashboards → "StockPilot API"
 ```
 
+## 7b. GitOps with Argo CD
+
+Argo CD watches `helm/stockpilot` on `main` and keeps the `stockpilot` namespace in sync with it. CI never runs `kubectl` against the cluster. It only commits the new image tag, and Argo CD pulls the change in.
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd --server-side --force-conflicts \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl wait -n argocd --for=condition=available deploy --all --timeout=600s
+kubectl apply -f argocd/stockpilot-app.yaml
+
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+kubectl port-forward -n argocd svc/argocd-server 8081:443   # https://localhost:8081, user admin
+```
+
+Details are in [argocd/README.md](argocd/README.md).
+
 ## 8. Troubleshooting labs
 
 See [troubleshooting/README.md](troubleshooting/README.md): a deployment with a non-existent image tag (`ImagePullBackOff`) and a Service whose selector matches no Pods.
 
-## 9. Live demo flow
+## 9. Live demo flow (GitOps)
 
 1. Change something visible, e.g. the subtitle in `frontend/src/App.jsx`.
 2. `git commit -am "Update dashboard subtitle" && git push`.
-3. Show the pipeline: tests → Trivy → images in GHCR with the new SHA.
-4. `helm upgrade --install stockpilot ./helm/stockpilot -n stockpilot -f helm/stockpilot/values-minikube.yaml --set image.tag=<new sha>`.
-5. `kubectl rollout status deploy/stockpilot-frontend -n stockpilot`, then refresh the browser.
+3. In GitHub Actions, the run goes through tests → terraform validate → build → Trivy → GHCR push → GitOps bump.
+4. In Argo CD, click **Refresh**. The app goes *OutOfSync* → *Syncing* → *Synced*, and the Deployments roll to the new SHA.
+5. Refresh http://stockpilot.local to see the new subtitle.
+6. Run `git pull` before the next change, because CI has committed the tag bump.
+
+Without Argo CD, the manual equivalent is `helm upgrade --install stockpilot ./helm/stockpilot -n stockpilot -f helm/stockpilot/values-minikube.yaml --set image.tag=<new sha>`.
+
+## Presentation
+
+The slide deck and the walkthrough video are in [demo/](demo/).
+
+## Known issues and limitations
+
+- PostgreSQL runs inside the cluster as a single-replica StatefulSet. That's fine for a demo, but production would use Amazon RDS with backups and Multi-AZ.
+- The Postgres password and the Grafana admin password are plain Helm values. A real setup would use AWS Secrets Manager / External Secrets or Sealed Secrets.
+- The EKS cluster was created, verified and destroyed to save cost. The live Kubernetes, Argo CD and monitoring demo runs on Minikube, using the same Helm chart.
+- Terraform state is local. A team would use an S3 backend with DynamoDB locking.
+- The CI deploy job needs a `KUBE_CONFIG_DATA` secret and is skipped without one. Deployment is done by Argo CD (pull-based) instead.
+- There is no authentication on the app or the API. It is an internal demo tool.
 
 ## Security notes
 

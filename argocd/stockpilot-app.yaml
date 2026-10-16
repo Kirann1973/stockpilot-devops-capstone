@@ -1,0 +1,33 @@
+# Argo CD Application: keeps the "stockpilot" namespace in sync with helm/stockpilot on main.
+# Apply once:  kubectl apply -f argocd/stockpilot-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: stockpilot
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Kirann1973/stockpilot-devops-capstone.git
+    targetRevision: main
+    path: helm/stockpilot
+    helm:
+      releaseName: stockpilot
+      valueFiles:
+        - values-minikube.yaml
+        - values-gitops.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: stockpilot
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  # The HPA owns the backend replica count, so Argo CD must not reset it.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

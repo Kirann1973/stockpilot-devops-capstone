@@ -142,7 +142,31 @@ jobs:
             echo "- \`${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.tag }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # ---------- Stage 3: deploy (runs only when a cluster is configured) ----------
+  # ---------- Stage 3a: GitOps - record the new image tag in Git for Argo CD ----------
+  gitops-bump:
+    name: "GitOps: bump image tag for Argo CD"
+    needs: build-scan-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Commit the new tag to helm/stockpilot/values-gitops.yaml
+        run: |
+          tag=${{ needs.build-scan-push.outputs.tag }}
+          sed -i "s/^  tag: .*/  tag: \"${tag}\"/" helm/stockpilot/values-gitops.yaml
+          git diff --quiet && { echo "Tag already ${tag}"; exit 0; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Deploy ${tag::7} via Argo CD [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "### Argo CD will deploy \`${tag}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------- Stage 3b: deploy with Helm (runs only when a cluster is configured) ----------
   deploy:
     name: Deploy with Helm
     needs: build-scan-push

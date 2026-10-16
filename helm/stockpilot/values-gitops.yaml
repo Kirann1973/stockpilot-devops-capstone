@@ -1,0 +1,5 @@
+# GitOps image pin, read by Argo CD (argocd/stockpilot-app.yaml).
+# The "GitOps: bump image tag" job in .github/workflows/ci-cd.yml rewrites this
+# line after every green build, and Argo CD then rolls the cluster to that commit.
+image:
+  tag: "fbda8c3cfb9f4a457aaf9b14977be52cafef7371"
